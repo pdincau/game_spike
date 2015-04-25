@@ -26,9 +26,9 @@ init([]) ->
 handle_call(_Request, _From, State) ->
     {reply, ok, State}.
 
-handle_cast(move, #state{position=Position, path=[Step|Steps]} = State) ->
-    NewPath = Steps ++ [Step],
-    NewPosition = move(Step, Position),
+handle_cast(move, #state{position=Position, path=[Direction|Directions]} = State) ->
+    NewPath = Directions ++ [Direction],
+    NewPosition = move(Direction, Position),
     io:format("Monster new position is: ~p~n", [NewPosition]),
     NewState = State#state{position=NewPosition, path=NewPath},
     gproc:send({p, l, ?MonsterKey}, {?MonsterKey, NewPosition}),
@@ -68,6 +68,3 @@ move(e, Position) ->
 
 move(w, Position) ->
     world:handle_move({-1, 0}, Position).
-
-
-
