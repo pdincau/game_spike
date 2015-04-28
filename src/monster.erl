@@ -41,7 +41,7 @@ handle_cast(_Msg, State) ->
     {noreply, State}.
 
 handle_info(timeout, State) ->
-    gen_server:cast(monster, move),
+    gen_server:cast(?SERVER, move),
     {noreply, State};
 
 handle_info(_Info, State) ->
