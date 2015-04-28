@@ -4,8 +4,8 @@
 assign_position() ->
     <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
     random:seed({A,B,C}),
-    X = random:uniform(31) - 1,
-    Y = random:uniform(29) - 1,
+    X = random:uniform(26) + 2,
+    Y = random:uniform(24) + 2,
     {n, X, Y}.
 
 handle_move({0, -1}, {_, X, 2}) ->
