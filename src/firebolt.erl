@@ -16,7 +16,6 @@ start(Position) ->
     gen_server:start(?MODULE, [Position], []).
 
 init([Position]) ->
-    %%TODO: should i cancel timer?
     {ok, TRef} = timer:send_interval(?TIMEOUT, timeout),
     {ok, #state{position=Position, step=0, tref=TRef}}.
 
