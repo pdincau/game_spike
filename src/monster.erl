@@ -10,7 +10,7 @@
 -define(TIMEOUT, 250).
 -define(MonsterKey, {monster, move}).
 
--record(state, {position, path}).
+-record(state, {position, path, tref}).
 
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
@@ -19,9 +19,8 @@ stop() ->
     gen_server:cast(?MODULE, stop).
 
 init([]) ->
-    %%TODO: should i cancel timer?
-    timer:send_interval(?TIMEOUT, timeout),
-    {ok, #state{position={n, 2, 2}, path=path()}}.
+    {ok, TRef} = timer:send_interval(?TIMEOUT, timeout),
+    {ok, #state{position={n, 2, 2}, path=path(), tref=TRef}}.
 
 handle_call(_Request, _From, State) ->
     {reply, ok, State}.
@@ -34,7 +33,8 @@ handle_cast(move, #state{position=Position, path=[Direction|Directions]} = State
     gproc:send({p, l, ?MonsterKey}, {?MonsterKey, NewPosition}),
     {noreply, NewState};
 
-handle_cast(stop, State) ->
+handle_cast(stop, #state{tref=TRef} = State) ->
+    timer:cancel(TRef),
     {stop, normal, State};
 
 handle_cast(_Msg, State) ->

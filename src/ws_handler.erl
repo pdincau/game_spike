@@ -10,12 +10,12 @@
 -define(FireboltKey, {firebolt, move}).
 
 init(Req, Opts) ->
-    {cowboy_websocket, Req, Opts}.
-
-websocket_handle({text, <<"start">>}, Req, State) ->
     gproc:reg({p, l, ?MonsterKey}),
     gproc:reg({p, l, ?PlayerKey}),
     gproc:reg({p, l, ?FireboltKey}),
+    {cowboy_websocket, Req, Opts}.
+
+websocket_handle({text, <<"start">>}, Req, State) ->
     {ok, _Pid} = player:start_link(),
     {ok, Req, State};
 

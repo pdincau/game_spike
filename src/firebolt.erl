@@ -10,20 +10,21 @@
 -define(TIMEOUT, 125).
 -define(FireboltKey, {firebolt, move}).
 
--record(state, {position, step}).
+-record(state, {position, step, tref}).
 
 start(Position) ->
     gen_server:start(?MODULE, [Position], []).
 
 init([Position]) ->
     %%TODO: should i cancel timer?
-    timer:send_interval(?TIMEOUT, timeout),
-    {ok, #state{position=Position, step=0}}.
+    {ok, TRef} = timer:send_interval(?TIMEOUT, timeout),
+    {ok, #state{position=Position, step=0, tref=TRef}}.
 
 handle_call(_Request, _From, State) ->
     {reply, ok, State}.
 
-handle_cast(move, #state{step=6} = State) ->
+handle_cast(move, #state{step=6, tref=TRef} = State) ->
+    timer:cancel(TRef),
     {stop, normal, State};
 
 handle_cast(move, #state{position=Position, step=Step} = State) ->
