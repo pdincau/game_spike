@@ -1,7 +1,7 @@
 -module(player).
 -behaviour(gen_server).
 
--export([start_link/0, stop/0, move/1, current_position/0]).
+-export([start_link/0, stop/0, move/1, current_position/0, fire/0]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
      terminate/2, code_change/3]).
@@ -23,8 +23,12 @@ move(Direction) ->
 current_position() ->
     gen_server:call(?MODULE, current_position).
 
+fire() ->
+    gen_server:cast(?MODULE, fire).
+
 init([]) ->
     Position = world:assign_position(),
+    gproc:send({p, l, ?PlayerKey}, {?PlayerKey, Position}),
     {ok, #state{position=Position}}.
 
 handle_call(current_position, _From, #state{position=Position} = State) ->
@@ -40,6 +44,11 @@ handle_cast({move, Direction}, #state{position=Position} = State) ->
     NewState = State#state{position=NewPosition},
     gproc:send({p, l, ?PlayerKey}, {?PlayerKey, NewPosition}),
     {noreply, NewState};
+
+handle_cast(fire, #state{position=Position} = State) ->
+    io:format("Player fired!~n", []),
+    firebolt:start(Position),
+    {noreply, State};
 
 handle_cast(stop, State) ->
     {stop, normal, State};

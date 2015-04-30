@@ -7,6 +7,7 @@
 
 -define(MonsterKey, {monster, move}).
 -define(PlayerKey, {player, move}).
+-define(FireboltKey, {firebolt, move}).
 
 init(Req, Opts) ->
     {cowboy_websocket, Req, Opts}.
@@ -14,10 +15,9 @@ init(Req, Opts) ->
 websocket_handle({text, <<"start">>}, Req, State) ->
     gproc:reg({p, l, ?MonsterKey}),
     gproc:reg({p, l, ?PlayerKey}),
-    {ok, _} = player:start_link(),
-    {Direction, X, Y} = player:current_position(),
-    Reply = jsx:encode([{<<"position">>,[{<<"direction">>, Direction}, {<<"x">>, X}, {<<"y">>, Y}]}]),
-    {reply, {text, Reply}, Req, State};
+    gproc:reg({p, l, ?FireboltKey}),
+    {ok, _Pid} = player:start_link(),
+    {ok, Req, State};
 
 websocket_handle({text, Msg}, Req, State) ->
     handle_msg(Msg),
@@ -27,11 +27,15 @@ websocket_handle(_Data, Req, State) ->
     {ok, Req, State}.
 
 websocket_info({?MonsterKey, {Direction, X, Y}}, Req, State) ->
-    Reply = jsx:encode([{<<"mposition">>,[{<<"direction">>, Direction}, {<<"x">>, X}, {<<"y">>, Y}]}]),
+    Reply = jsx:encode([{<<"monster">>, [{<<"position">>, [{<<"direction">>, Direction}, {<<"x">>, X}, {<<"y">>, Y}]}]}]),
     {reply, {text, Reply}, Req, State};
 
 websocket_info({?PlayerKey, {Direction, X, Y}}, Req, State) ->
-    Reply = jsx:encode([{<<"position">>,[{<<"direction">>, Direction}, {<<"x">>, X}, {<<"y">>, Y}]}]),
+    Reply = jsx:encode([{<<"player">>, [{<<"position">>, [{<<"direction">>, Direction}, {<<"x">>, X}, {<<"y">>, Y}]}]}]),
+    {reply, {text, Reply}, Req, State};
+
+websocket_info({?FireboltKey, {Direction, X, Y}}, Req, State) ->
+    Reply = jsx:encode([{<<"firebolt">>, [{<<"position">>, [{<<"direction">>, Direction}, {<<"x">>, X}, {<<"y">>, Y}]}]}]),
     {reply, {text, Reply}, Req, State};
 
 websocket_info(_Info, Req, State) ->
@@ -51,4 +55,7 @@ handle_msg(<<"{\"move\":\"left\"}">>) ->
     player:move(w);
 
 handle_msg(<<"{\"move\":\"right\"}">>) ->
-    player:move(e).
+    player:move(e);
+
+handle_msg(<<"{\"attack\":\"fire\"}">>) ->
+    player:fire().
