@@ -9,6 +9,7 @@
 -define(SERVER, ?MODULE).
 -define(TIMEOUT, 250).
 -define(MonsterKey, {monster, move}).
+-define(FireboltKey, {firebolt, move}).
 
 -record(state, {position, path, tref}).
 
@@ -19,6 +20,7 @@ stop() ->
     gen_server:cast(?MODULE, stop).
 
 init([]) ->
+    gproc:reg({p, l, ?FireboltKey}),
     {ok, TRef} = timer:send_interval(?TIMEOUT, timeout),
     {ok, #state{position={n, 2, 2}, path=path(), tref=TRef}}.
 
@@ -39,6 +41,14 @@ handle_cast(stop, #state{tref=TRef} = State) ->
 
 handle_cast(_Msg, State) ->
     {noreply, State}.
+
+handle_info({?FireboltKey, FireboltPosition}, #state{position=Position} = State) ->
+    case collision(FireboltPosition, Position) of
+        true ->
+            {stop, normal, noreply};
+        false ->
+            {noreply, State}
+    end;
 
 handle_info(timeout, State) ->
     gen_server:cast(?SERVER, move),
@@ -68,3 +78,9 @@ move(e, Position) ->
 
 move(w, Position) ->
     world:handle_move({-1, 0}, Position).
+
+collision({_, X, Y}, {_, X, Y}) ->
+    true;
+
+collision(_, _) ->
+    false.
