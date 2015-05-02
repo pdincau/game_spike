@@ -8,6 +8,7 @@
 
 -define(SERVER, ?MODULE).
 -define(TIMEOUT, 250).
+-define(FAST_TIMEOUT, 125).
 -define(MonsterKey, {monster, move}).
 -define(FireboltKey, {firebolt, move}).
 
@@ -91,6 +92,8 @@ collision(_, _) ->
 handle_maybe_dead(#state{energy=0} = _State) ->
     {stop, normal, noreply};
 
-handle_maybe_dead(#state{energy=Energy} = State) ->
-    NewState = State#state{energy=Energy-1},
+handle_maybe_dead(#state{energy=Energy, tref=TRef} = State) ->
+    timer:cancel(TRef),
+    {ok, NewTRef} = timer:send_interval(?FAST_TIMEOUT, timeout),
+    NewState = State#state{energy=Energy-1, tref=NewTRef},
     {noreply, NewState}.
