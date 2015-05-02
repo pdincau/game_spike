@@ -11,7 +11,7 @@
 -define(MonsterKey, {monster, move}).
 -define(FireboltKey, {firebolt, move}).
 
--record(state, {position, path, tref}).
+-record(state, {position, path, energy, tref}).
 
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
@@ -22,7 +22,7 @@ stop() ->
 init([]) ->
     gproc:reg({p, l, ?FireboltKey}),
     {ok, TRef} = timer:send_interval(?TIMEOUT, timeout),
-    {ok, #state{position={n, 2, 2}, path=path(), tref=TRef}}.
+    {ok, #state{position={n, 2, 2}, path=path(), energy=2, tref=TRef}}.
 
 handle_call(_Request, _From, State) ->
     {reply, ok, State}.
@@ -42,13 +42,8 @@ handle_cast(stop, #state{tref=TRef} = State) ->
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
-handle_info({?FireboltKey, FireboltPosition}, #state{position=Position} = State) ->
-    case collision(FireboltPosition, Position) of
-        true ->
-            {stop, normal, noreply};
-        false ->
-            {noreply, State}
-    end;
+handle_info({?FireboltKey, FireboltPosition}, State) ->
+    handle_maybe_hit(FireboltPosition, State);
 
 handle_info(timeout, State) ->
     gen_server:cast(?SERVER, move),
@@ -79,8 +74,23 @@ move(e, Position) ->
 move(w, Position) ->
     world:handle_move({-1, 0}, Position).
 
+handle_maybe_hit(FireboltPosition, #state{position=Position} = State) ->
+    case collision(FireboltPosition, Position) of
+        true ->
+            handle_maybe_dead(State);
+        false ->
+            {noreply, State}
+    end.
+
 collision({_, X, Y}, {_, X, Y}) ->
     true;
 
 collision(_, _) ->
     false.
+
+handle_maybe_dead(#state{energy=0} = _State) ->
+    {stop, normal, noreply};
+
+handle_maybe_dead(#state{energy=Energy} = State) ->
+    NewState = State#state{energy=Energy-1},
+    {noreply, NewState}.
